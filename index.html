@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>알콩이 징검다리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 한 화면 게임: 위에 알콩이 무대, 아래에 둥근 버튼. 연두 들판과 하늘색 강 */
+:root{
+--bg:#EEF5E6;--card:#FFFFFF;--ink:#1F3324;--muted:#5C6E5B;--line:#D5E2CC;
+--leaf:#3B6D11;--leaf2:#639922;--leaf3:#C0DD97;--river:#85B7EB;--river2:#378ADD;--sand:#FAEEDA;
+--ok:#E3F1D3;--okink:#27500A;--no:#FCE3E3;--noink:#8A1F1F;--gold:#EF9F27;
+--disp:"Gowun Dodum","Noto Sans KR",system-ui,sans-serif;--body:"Noto Sans KR",system-ui,sans-serif;
+color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;
+padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1,h2{font-family:var(--disp);font-weight:400;margin:0;text-wrap:balance}
+h1{font-size:28px;letter-spacing:-.5px}h2{font-size:21px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--river2);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.icon{width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--line);display:grid;place-items:center;font-size:15px}
+.stage{width:152px;height:168px;border-radius:28px;overflow:hidden;flex:none;background:var(--card)}
+.stage svg{display:block}
+.hero{display:flex;gap:16px;align-items:center;background:var(--card);border-radius:28px;padding:14px;border:1.5px solid var(--line)}
+.chips{display:flex;flex-direction:column;gap:8px;min-width:0}
+.chip{display:flex;justify-content:space-between;gap:10px;background:var(--bg);border-radius:999px;padding:6px 14px;font-size:14px}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+.big{width:100%;border-radius:999px;padding:16px;font-size:19px;font-family:var(--disp);background:var(--leaf2);color:#fff}
+.big:active,.opt:active,.pill:active{transform:scale(.98)}
+.row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.mid{border-radius:22px;padding:12px 6px;background:var(--card);border:1.5px solid var(--line);font-size:15px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.mid small{color:var(--muted);font-size:12px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:24px;padding:16px}
+.lab{font-size:13px;color:var(--muted);letter-spacing:.3px;margin-bottom:8px}
+.weeks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.wk{border-radius:18px;background:var(--bg);padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;font-size:13px;border:2px solid transparent}
+.wk canvas{width:40px;height:36px;image-rendering:pixelated}
+.wk.on,.seg button.on,.tab.on{border-color:var(--leaf2);background:var(--ok)}
+.wk.all{grid-column:span 5;flex-direction:row;justify-content:center;gap:8px;padding:10px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.seg button{border-radius:999px;background:var(--bg);padding:10px;font-size:15px;border:2px solid transparent}
+.river{position:relative;height:150px;border-radius:24px;overflow:hidden;background:var(--river)}
+.strip{position:absolute;inset:0;transition:transform .55s cubic-bezier(.35,0,.4,1)}
+.stone{position:absolute;bottom:18px;width:64px;height:20px;border-radius:50%;background:#D3D1C7;border-bottom:4px solid #B4B2A9}
+.bank{position:absolute;bottom:0;height:40px;background:var(--leaf3);border-top:4px solid var(--leaf2)}
+.wave{position:absolute;height:3px;width:18px;border-radius:2px;background:#E6F1FB;opacity:.8}
+#al{position:absolute;bottom:30px;width:76px;height:84px;transition:left .55s cubic-bezier(.35,0,.4,1)}
+#al svg{transform-origin:50% 100%;display:block}
+.crouch{transform:scale(1.12,.82)}
+.air{animation:air .55s cubic-bezier(.3,0,.7,1)}
+@keyframes air{50%{transform:translateY(-46px) rotate(-6deg)}}
+.land{animation:land .25s}
+@keyframes land{40%{transform:scale(1.14,.84)}}
+.sink{animation:sink .75s forwards}
+@keyframes sink{30%{transform:translateY(-24px)}100%{transform:translateY(70px)}}
+.yay{animation:yay .45s 4}
+@keyframes yay{50%{transform:translateY(-16px)}}
+.drop{position:absolute;width:6px;height:6px;background:#E6F1FB;bottom:26px;animation:dr .6s forwards}
+@keyframes dr{50%{transform:translate(var(--x),-30px)}100%{transform:translate(calc(var(--x)*1.6),0);opacity:0}}
+#msg{position:absolute;top:10px;left:0;right:0;text-align:center;font-family:var(--disp);font-size:22px;color:#0C447C;opacity:0;transition:opacity .2s}
+.prog{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+.q{font-size:19px;line-height:1.6;text-align:center;font-family:var(--disp);word-break:keep-all}
+.q small{display:block;font-family:var(--body);font-size:13px;color:var(--muted);margin-top:6px}
+.qt{font-size:13px;color:var(--leaf);text-align:center;margin-bottom:6px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{width:100%;text-align:left;border-radius:20px;padding:12px 16px;background:var(--card);border:2px solid var(--line);font-size:16px;word-break:keep-all;line-height:1.45}
+.opt.ok{background:var(--ok);border-color:var(--leaf2);color:var(--okink)}
+.opt.no{background:var(--no);border-color:#E24B4A;color:var(--noink)}
+.pill{border-radius:999px;padding:10px 18px;background:var(--card);border:1.5px solid var(--line);font-size:15px}
+.reward{text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.gifts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.gift{background:var(--bg);border-radius:20px;padding:10px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:13px;min-width:88px}
+.gift svg,.gift canvas{width:48px;height:48px;image-rendering:pixelated}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border-radius:999px;padding:7px 14px;background:var(--card);border:2px solid var(--line);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.it{aspect-ratio:1;border-radius:18px;background:var(--bg);border:2px solid transparent;display:grid;place-items:center;position:relative;overflow:hidden}
+.it svg,.it canvas{width:72%;height:72%;image-rendering:pixelated}
+.it.sel{border-color:var(--leaf2);background:var(--ok)}
+.it.lock{opacity:.4}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line)}
+.dot.sel{border-color:var(--ink)}
+.dex{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.cell{border-radius:18px;background:var(--bg);padding:8px 2px;text-align:center;font-size:12px;word-break:keep-all;line-height:1.3;display:flex;flex-direction:column;align-items:center;gap:2px}
+.cell canvas{width:48px;height:43px;image-rendering:pixelated}
+.cell small{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.note{font-size:14px;color:var(--muted);text-align:center;min-height:22px}
+.confetti{position:absolute;width:6px;height:6px;top:-8px;animation:fall 1.4s linear forwards}
+@keyframes fall{to{transform:translateY(170px) rotate(220deg)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<section id="home">
+<div class="wrap">
+<div class="top"><h1>알콩이 징검다리</h1></div>
+<div class="hero"><div class="stage" id="hstage"></div>
+<div class="chips"><div class="chip">건넌 강<b id="cCross">0번</b></div><div class="chip">콩 친구<b id="cFr">0 / 10</b></div><div class="chip">오답 주머니<b id="cBag">0개</b></div></div></div>
+<button class="big" id="goPick">강 건너기</button>
+<div class="row2"><button class="mid" id="goReview">복습 강<small id="rvSub">틀린 속담 0개</small></button><button class="mid" id="goCloset">옷장<small id="clSub">꾸미기 0개</small></button><button class="mid" id="goDex">콩 도감<small id="dxSub">친구 0명</small></button></div>
+<div class="note" id="homeNote"></div>
+</div>
+</section>
+
+<section id="pick" hidden>
+<div class="wrap">
+<div class="top"><h2>어느 강을 건널까?</h2><button class="pill back">처음으로</button></div>
+<div class="card"><div class="lab">속담 범위 · 콩 친구는 그 주 10개를 모두 한 번 이상 맞히면 만나요</div><div class="weeks" id="weeks"></div></div>
+<div class="card"><div class="lab">문제 모양</div><div class="seg" id="types"></div></div>
+<button class="big" id="start">출발!</button>
+</div>
+</section>
+
+<section id="play" hidden>
+<div class="wrap">
+<div class="top"><button class="pill" id="quit">그만하기</button><span class="prog" id="prog"></span></div>
+<div class="river" id="river"><div class="strip" id="strip"></div><div id="msg"></div></div>
+<div id="qa" class="wrap" style="gap:10px">
+<div class="card"><div class="qt" id="qt"></div><div class="q" id="q"></div></div>
+<div class="opts" id="opts"></div>
+</div>
+<div id="done" class="card reward" hidden></div>
+</div>
+</section>
+
+<section id="closet" hidden>
+<div class="wrap">
+<div class="top"><h2>알콩이 옷장</h2><button class="pill back">처음으로</button></div>
+<div class="hero" style="justify-content:center"><div class="stage" id="cstage"></div></div>
+<div class="tabs" id="tabs"></div>
+<div class="card"><div class="grid" id="items"></div><div class="dots" id="dots"></div></div>
+<div class="note" id="clNote"></div>
+</div>
+</section>
+
+<section id="dexv" hidden>
+<div class="wrap">
+<div class="top"><h2>콩 친구 도감</h2><button class="pill back">처음으로</button></div>
+<div class="card"><div class="dex" id="dex"></div></div>
+<div class="card" id="shinyCard"><div class="lab">반짝 콩 친구 · 친구 10명을 다 만난 뒤, 한 주 강을 한 번도 안 틀리고 건너면 만나요</div><div class="dex" id="shiny"></div></div>
+<div class="note" id="dxNote"></div>
+</div>
+</section>
+
+</div>
+<script>
+const P=[
+["가는 날이 장날이다","뜻하지 않은 일이 우연하게도 잘 들어맞았을 때 쓰는 말","장날"],
+["가는 말이 고와야 오는 말이 곱다","내가 남에게 좋게 해야 남도 내게 잘한다는 말","고와야"],
+["가랑비에 옷 젖는 줄 모른다","재산 같은 것이 조금씩 없어지는 줄 모르게 줄어 들어가는 것","가랑비"],
+["가랑잎이 솔잎더러 바스락거린다고 한다","제 결점이 큰 줄 모르고 남의 작은 허물을 탓한다는 말","솔잎"],
+["가재는 게 편이라","형편이 비슷하고 인연 있는 것끼리 서로 편이 되어 사정을 보아 줌","가재"],
+["가지 많은 나무에 바람 잘 날 없다","자식 많은 사람은 걱정이 떠날 때가 없다는 뜻","바람"],
+["간에 가 붙고 쓸개에 가 붙는다","조금이라도 이로운 일이라면 체면도 버리고 아무에게나 아첨한다는 뜻","쓸개"],
+["간에 기별도 안 간다","음식을 조금밖에 먹지 못하여 양에 차지 않을 때 쓰는 말","기별"],
+["간이 콩알만해지다","겁이 나서 몹시 두려워진다는 뜻","콩알"],
+["갈수록 태산","어려운 일을 당할수록 점점 더 어려운 일이 닥쳐온다는 뜻","태산"],
+["값싼 것이 비지떡","값이 싸면 품질도 좋지 못하다는 뜻","비지떡"],
+["같은 값이면 다홍치마","이왕 같은 값이면 자기에게 더 좋은 것을 고른다는 말","다홍치마"],
+["개구리 올챙이 적 생각을 못한다","형편이 나아지면 어렵던 예전 때를 생각하지 못한다는 뜻","올챙이"],
+["개밥에 도토리","여럿 속에 어울리지 못하는 사람을 뜻하는 말","도토리"],
+["개천에서 용 난다","변변하지 못한 집안에서 훌륭한 인물이 나왔을 때 쓰는 말","용"],
+["고기는 씹어야 맛이요, 말은 해야 맛이라","속으로만 애태우지 말고 할 말은 속 시원히 해야 한다는 말","고기"],
+["고래 싸움에 새우 등 터진다","힘센 사람들끼리 싸우는 통에 약한 사람이 아무 관계없이 해를 입을 때 쓰는 말","새우"],
+["고양이 목에 방울 달기","실행하기 어려운 일을 공연히 의논함을 빗대어 이르는 말","방울"],
+["공든 탑이 무너지랴","정성을 다하여 한 일은 헛되지 않아 반드시 좋은 결과를 얻는다는 뜻","탑"],
+["구더기 무서워 장 못 담글까","방해되는 일이 있더라도 마땅히 할 일은 해야 한다는 말","구더기"],
+["구슬이 서 말이라도 꿰어야 보배라","아무리 훌륭한 일이라도 끝을 맺어 놓아야 가치가 있다는 말","구슬"],
+["귀에 걸면 귀걸이, 코에 걸면 코걸이","이런 것도 같고 저런 것도 같아 어느 한쪽으로 정하기 어려울 때 하는 말","귀걸이"],
+["그림의 떡","보기는 해도 먹을 수도 가질 수도 없어 아무 소용이 없는 경우","그림"],
+["금강산도 식후경","아무리 좋은 것도 배가 부르고 난 뒤에야 좋은 줄 안다는 말","금강산"],
+["뛰는 놈 위에 나는 놈 있다","아무리 재주가 있어도 더 나은 사람이 있으니 너무 자랑하지 말라는 뜻","나는"],
+["까마귀 날자 배 떨어진다","아무 관계없이 한 일이 다른 일과 때가 겹쳐 의심을 받을 때 쓰는 말","까마귀"],
+["꿩 대신 닭","쓰려는 것이 없을 때 그와 비슷한 것으로 대신 쓸 수도 있다는 말","닭"],
+["꿩 먹고 알 먹기","한 가지 일을 하고 두 가지 이익을 볼 때 쓰는 말","알"],
+["남의 잔치에 감 놓아라 배 놓아라 한다","쓸데없이 남의 일에 간섭한다는 뜻","잔치"],
+["낫 놓고 기역자도 모른다","글자를 전혀 모르는 사람을 두고 하는 말","기역자"],
+["낮말은 새가 듣고 밤말은 쥐가 듣는다","비밀히 하는 말도 새어 나가기 쉬우니 말을 항상 조심하라는 뜻","쥐"],
+["내 코가 석 자","내 사정이 급해서 남의 사정까지 돌볼 수가 없다는 말","석 자"],
+["누워서 침 뱉기","남을 해치려다 도리어 자기 자신이 해를 입는다는 말","침"],
+["늦게 배운 도둑이 날 새는 줄 모른다","나이 들어서 시작한 일에 몹시 빠져드는 사람을 두고 하는 말","도둑"],
+["다 된 죽에 코 풀기","다 된 일을 망쳐 놓았다는 뜻","죽"],
+["달면 삼키고 쓰면 뱉는다","제게 이로우면 이용하고 필요하지 않으면 버린다는 뜻","삼키고"],
+["닭 잡아먹고 오리발 내민다","나쁜 일을 하고 간사한 꾀로 숨기려 할 때 쓰는 말","오리발"],
+["도둑이 제 발 저리다","죄 지은 사람이 들킬까 두려워 스스로 드러내고 만다는 뜻","발"],
+["돌다리도 두들겨 보고 건너라","아무리 잘 아는 일이라도 조심하여 실수 없게 하라는 뜻","돌다리"],
+["되로 주고 말로 받는다","남을 조금 건드렸다가 도리어 크게 당한다는 뜻","말로"],
+["등잔 밑이 어둡다","가까이 있는 일을 먼 데 일보다 오히려 모른다는 뜻","등잔"],
+["땅 짚고 헤엄치기","아주 쉽게 할 수 있는 일을 가리켜 하는 말","헤엄"],
+["똥 묻은 개가 겨 묻은 개 나무란다","자기는 더 큰 흉이 있으면서 남의 작은 흉을 탓한다는 뜻","겨"],
+["마른 하늘에 날벼락","뜻밖에 당하는 재난을 이르는 말","날벼락"],
+["말 한마디에 천 냥 빚도 갚는다","말을 잘하면 큰 빚도 갚을 수 있다는 말로, 말의 중요성을 나타낸 말","천 냥"],
+["목구멍이 포도청","먹고 살기 위해서는 어떤 일이라도 하게 된다는 뜻","포도청"],
+["못된 송아지 엉덩이에 뿔 난다","되지 못한 사람이 건방지고 좋지 못한 짓을 한다는 뜻","송아지"],
+["믿는 도끼에 발등 찍힌다","믿던 일이나 사람에게 뜻밖에 해를 입는다는 말","도끼"],
+["밑 빠진 독에 물 붓기","아무리 애써도 보람이 나타나지 않는 경우에 쓰는 말","독"],
+["바늘 도둑이 소 도둑 된다","나쁜 행실은 점점 더 커지니 나쁜 버릇은 아예 들이지 말라는 뜻","바늘"],
+["배보다 배꼽이 더 크다","마땅히 작아야 할 것이 오히려 클 때 이르는 말","배꼽"],
+["백지장도 맞들면 낫다","아무리 쉬운 일이라도 혼자보다 함께 하는 것이 훨씬 낫다는 말","백지장"],
+["벼룩의 간 빼먹기","아주 적은 이익을 부당한 방법으로 빼앗는다는 말","벼룩"],
+["병 주고 약 준다","일이 안 되도록 방해하고는 도와주는 척한다는 뜻","약"],
+["보기 좋은 떡이 먹기도 좋다","겉모양이 좋으면 속의 내용도 좋다는 뜻","떡"],
+["빛 좋은 개살구","겉만 번지르르하고 실속이 없다는 뜻","개살구"],
+["사공이 많으면 배가 산으로 올라간다","간섭하는 사람이 많으면 일이 잘 안 된다는 뜻","사공"],
+["새 발의 피","아주 적은 분량을 말함","피"],
+["서당 개 삼 년에 풍월을 읊는다","무식한 사람도 유식한 사람과 오래 지내면 자연히 보고 듣는 것이 생긴다는 말","풍월"],
+["세 살 버릇 여든까지 간다","어려서부터 좋은 버릇을 들여야 한다는 뜻","버릇"],
+["소문난 잔치에 먹을 것 없다","소문난 것이 흔히 실제로는 보잘것없다는 말","소문"],
+["소 잃고 외양간 고친다","이미 일을 그르친 뒤에 뉘우쳐도 소용이 없다는 뜻","외양간"],
+["쇠뿔도 단김에 빼랬다","어떤 일을 하려고 마음먹으면 망설이지 말고 곧 행동으로 옮기라는 말","쇠뿔"],
+["수박 겉 핥기","내용이나 참뜻은 모르면서 겉만 대충 하는 것을 이르는 말","수박"],
+["식은 죽 먹기","어떤 일이 아주 하기 쉽다는 말","식은 죽"],
+["십 년이면 강산도 변한다","십 년 세월이 흐르면 세상에 변하지 않는 것이 없다는 말","강산"],
+["아는 길도 물어 가라","아무리 익숙한 일이라도 남에게 물어보고 조심하는 것이 안전하다는 뜻","길"],
+["아니 땐 굴뚝에 연기 나랴","원인이 없으면 결과가 생기지 않는다는 뜻, 소문에는 반드시 이유가 있다는 말","굴뚝"],
+["아닌 밤중에 홍두깨","예고도 없이 뜻밖의 일이 생겼을 때 하는 말","홍두깨"],
+["약방에 감초","어떤 일에나 빠짐없이 끼어드는 사람을 말함","감초"],
+["어물전 망신은 꼴뚜기가 시킨다","못난 사람일수록 함께 있는 동료를 망신시킨다는 말","꼴뚜기"],
+["열 길 물속은 알아도 한 길 사람 속은 모른다","사람의 마음은 알아내기가 어렵다는 뜻","열 길"],
+["열 번 찍어 아니 넘어가는 나무 없다","여러 번 계속 애쓰면 어떤 일이라도 이룬다는 말","열 번"],
+["오뉴월 감기는 개도 아니 앓는다","여름철에 감기 걸린 사람을 놀리는 말","오뉴월"],
+["오르지 못할 나무는 쳐다보지도 말아라","될 수 없는 일은 바라지도 말라는 뜻","나무"],
+["옥의 티","아무리 좋아도 한 가지 흠은 있다는 말","옥"],
+["우물에 가서 숭늉 찾는다","일의 순서도 모르고 성급하게 덤빈다는 뜻","숭늉"],
+["울며 겨자 먹기","싫은 일을 억지로 하지 않을 수 없는 경우를 나타내는 말","겨자"],
+["원수는 외나무다리에서 만난다","남에게 악한 일을 하면 그 벌을 받을 때가 반드시 온다는 뜻","외나무다리"],
+["원숭이도 나무에서 떨어진다","아무리 능숙한 사람도 실수할 때가 있다는 말","원숭이"],
+["윗물이 맑아야 아랫물도 맑다","윗사람이 잘못하면 아랫사람도 따라서 잘못하게 된다는 뜻","윗물"],
+["자라 보고 놀란 가슴 솥뚜껑 보고 놀란다","한 번 혼난 사람이 비슷한 것만 보아도 깜짝 놀란다는 말","솥뚜껑"],
+["자랄 나무는 떡잎부터 알아본다","크게 될 사람은 어려서부터 그 모습이 보인다는 말","떡잎"],
+["작은 고추가 더 맵다","겉으로 대수롭지 않아 보이는 사람이 하는 일이 더 야무지다는 말","고추"],
+["종로에서 뺨 맞고 한강 가서 눈 흘긴다","당한 자리에서는 말도 못하고 딴 데 가서 화풀이한다는 뜻","한강"],
+["좋은 약은 입에 쓰다","듣기 싫은 말이라도 나에게는 이롭다는 뜻","입"],
+["쥐구멍에도 볕 들 날 있다","고생만 하는 사람도 좋은 시기를 만날 때가 있다는 말","볕"],
+["지렁이도 밟으면 꿈틀한다","아무리 약한 사람이라도 너무 업신여기면 화를 낸다는 뜻","지렁이"],
+["천 리 길도 한 걸음부터","무슨 일이든 그 시작이 중요하다는 뜻","한 걸음"],
+["칼로 물 베기","다투다가도 시간이 조금 지나면 금방 사이가 다시 좋아진다는 뜻","칼"],
+["콩 심은 데 콩 나고 팥 심은 데 팥 난다","모든 일은 원인에 따라 결과가 생긴다는 말","팥"],
+["티끌 모아 태산","작은 것이라도 모이면 큰 것이 된다는 뜻","티끌"],
+["핑계 없는 무덤 없다","잘못해 놓고도 여러 이유를 대며 책임을 피하려는 사람을 두고 하는 말","핑계"],
+["하늘의 별 따기","아주 어려운 일을 두고 하는 말","별"],
+["하늘이 무너져도 솟아날 구멍이 있다","아무리 큰 어려움이 닥쳐도 벗어날 길은 있다는 뜻","구멍"],
+["하룻강아지 범 무서운 줄 모른다","아직 철이 없어 무서운 것을 모르고 덤비는 것을 두고 하는 말","하룻강아지"],
+["한 귀로 듣고 한 귀로 흘린다","남이 일러 주는 말을 귀담아듣지 않고 건성으로 듣는 것","귀"],
+["한 술 밥에 배 부르랴","무슨 일이든 처음부터 큰 성과를 기대할 수 없다는 말","한 술"],
+["함흥차사","심부름 간 사람이 돌아오지 않거나 아무 소식이 없다는 뜻","함흥"],
+["호랑이도 제 말 하면 온다","마침 이야기하고 있는데 그 사람이 나타났을 때 하는 말","호랑이"]
+];
+const SIM=[[3,42],[38,66],[55,60],[41,64],[67,90],[88,97],[18,72],[43,68],[86,94],[34,61]];
+
+const SRC='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABoUlEQVR4nO2asU7DQAyGDeIhmEInhMTO0AnxLgipcx+DiQGp4l0QUwd2JMRQwakDbwELRsRKRO7OPkfy/01t2pwd+z9fzgkRAACAuBxYG1jeXn6VnLddP5n7RkR02MLInFGPssz46flx0ThvL5+971aKgAK0BtLKvMRaCeEVcFQ7AGdeK+PMxcnZ8A8/9rSUEF4BxVG0mvMSVsLzxysR6deE8AqorgFWmWc487ImSCWUAgXknmBV9XP5tV+5KkABrQw93myJiOhqs5x0XMK1QBsooJUhzvD9w6J3fLVp5cEw4RXQPACr6/fBz140mwJ/mcOFM5gC3g54gwB4O+ANAuDtgDfVHSGvXSH3A9ARqiT7Rqjrul4vkDPRSgmyE8T+pJTQDyhhsgJkpNM6EVH5099a5NwvVUJ4BYxGS871/yI7l2eDuX6HV4Dadpgzw0qoXR3wfkAj8I5QCyNzxrwltr/bEdH09VlWcWvCKwAB8HbAGwTA2wFvEABvB7xBALwd8MbsfntsDzB2j5/7fy3CK0B9L5C7+/PqKTLhFQAAACAy38pHkda6DrxqAAAAAElFTkSuQmCC';
+const $=id=>document.getElementById(id);
+const R=(n,s)=>Array(n).fill(s);
+const I=[
+["h","리본",24,0,["oo...........oo", "oPoo.......ooPo", "ohPPoo...ooPPho", "ohPPPPoKoPPPPho", "oPPPPPKKKPPPPPo", "oPPSSPoKoPSSPPo", "oPSoo.oPo.ooSPo", "ooo..oPPPo..ooo", ".....oPoPo.....", "....oPo.oPo....", "....oo...oo...."],{o:"#993556",P:"#ED93B1",h:"#FBEAF0",S:"#D4537E",K:"#D4537E"},1],
+["h","왕관",11,-1,["y...y...y","yy.yyy.yy","yyyyyyyyy","yyryybyry","YYYYYYYYY"],{y:"#EF9F27",Y:"#BA7517",r:"#E24B4A",b:"#378ADD"}],
+["h","새싹",11,-3,[".gg...gg.","gGGg.gGGg",".ggg.ggg.","....d....","....d....","....d...."],{g:"#639922",G:"#97C459",d:"#3B6D11"}],
+["h","꽃 핀",36,2,[".ooo...ooo.", "ohPPo.ohPPo", "oPPPPoPPPPo", "oPPPPyPPPPo", ".oPPyYyPPo.", "..oyYYYyo..", ".oPPyYyPPo.", "oPPPPyPPPPo", "oPPPPoPPPPo", "oPPSo.oPPSo", ".ooo...ooo."],{o:"#D4537E",P:"#F4C0D1",h:"#FBEAF0",S:"#ED93B1",y:"#EF9F27",Y:"#FAC775"},1],
+["h","야구모자",10,0,[".....ww.......","..bbbbbbb.....",".bbbbbbbbb....","bbbbbbbbbbb...","BBBBBBBBBBBBBB"],{b:"#378ADD",B:"#185FA5",w:"#185FA5"}],
+["h","밀짚모자",7,1,[".....yyyyyyy.....","....yyyyyyyyy....","....rrrrrrrrr....","yYyYyYyYyYyYyYyYy"],{y:"#FAC775",Y:"#EF9F27",r:"#D85A30"}],
+["h","마법사 모자",10,-5,[".....p.....","....ppp....","....pyp....","...ppppp...","...ppppp...","..pppyppp..","..ppppppp..","ppppppppppp","PPPPPPPPPPP"],{p:"#534AB7",P:"#3C3489",y:"#FAC775"}],
+["h","고양이 귀",11,0,["o.......o","oo.....oo","opo...opo","oppo.oppo","oooo.oooo"],{o:"#888780",p:"#ED93B1"}],
+["h","토끼 귀",9,-6,["..oo.....oo..",".owwo...owwo.",".owpo...opwo.",".owpo...opwo.",".owpo...opwo.","..owpo.opwo..","..owwo.owwo..","...owo.owo...","...owo.owo..."],{o:"#B4B2A9",w:"#ffffff",p:"#F4C0D1"}],
+["h","헤드폰",5,1,["......kkkkkkkkk......","....kk.........kk....","...k.............k...","..k...............k..",".k.................k.",".k.................k.","rR.................Rr","rR.................Rr","rR.................Rr"],{k:"#2C2C2A",r:"#A32D2D",R:"#E24B4A"}],
+["h","생일 고깔",12,-5,["...y...","...p...","..pwp..","..ppp..",".pwppp.",".ppppw.","pwppppp","ppppwpp"],{p:"#ED93B1",w:"#FAC775",y:"#FAC775"}],
+["h","산타 모자",9,-3,[".....rrrr.ww.","....rrrrrrww.","...rrrrrrr...","..rrrrrrrrr..",".wwwwwwwwwww.",".wwwwwwwwwww."],{r:"#E24B4A",w:"#F1EFE8"}],
+["f","동그란 안경",9,9,["..kkkkkkkk..","kkk..kk..kkk","..kkk..kkk.."],{k:"#444441"}],
+["f","선글라스",9,9,["..kkkkkkkk..","kkkdskkdskkk","..kkk..kkk.."],{k:"#2C2C2A",d:"#444441",s:"#85B7EB"}],
+["f","하트 안경",14,17,["..................................", "oooo......oo.oo..oo.oo.......ooooo", "....oooooohLoLLoohLoLLooooooo.....", ".........oLLLLLooLLLLLo...........", "..........oLLLo..oLLLo............", "...........oLo....oLo.............", "............o......o.............."],{o:"#993556",L:"#ED93B1",h:"#FBEAF0"},1],
+["f","볼터치",19,23,["pPPp.............pPPp", ".pp...............pp."],{p:"#F09595",P:"#F7C1C1"},1],
+["f","콧수염",11,12,[".kk..kk.","kkkkkkkk","k......k"],{k:"#633806"}],
+["f","해적 안대",12,8,["....................................", "..................................o.", "...............................ooo..", "..............................o.....", "...........................ooo......", "..........................o.........", ".......................ooo..........", "......................o.............", ".............oooo..ooo..............", "............okkkkoo.................", "...........okskkkko.................", "..........ookkkkkko.................", "......oooo.okkkkkko.................", "..oooo.....okkkkkko.................", "oo..........okkkko..................", ".............oooo...................", "....................................", "...................................."],{o:"#2C2C2A",k:"#444441",s:"#888780"},1],
+["b","반창고",37,30,[".ooooooooo.", "otttCCCttto", "otdtCCCtdto", "otttCCCttto", ".ooooooooo."],{o:"#F0997B",t:"#F5C4B3",C:"#FAECE7",d:"#F0997B"},1],
+["b","나비넥타이",11,14,["rr.....rr","rrrr.rrrr","rrrrRrrrr","rrrr.rrrr","rr.....rr"],{r:"#E24B4A",R:"#A32D2D"}],
+["b","목도리",6,14,["sSsSsSsSsSsSsSsSsSs","SsSsSsSsSsSsSsSsSsS","..............sSs..","..............SsS..","..............sSs..","..............w.w.."],{s:"#E24B4A",S:"#F09595",w:"#F7C1C1"}],
+["b","금메달",13,13,["b...r","bb.rr",".brr.",".yyy.","yYyYy","yyYyy",".yyy."],{b:"#378ADD",r:"#E24B4A",y:"#EF9F27",Y:"#FAC775"}],
+["b","별 배지",37,28,[".....o.....", "....oYo....", "....oyo....", "ooooyyyoooo", "oYYyyyyyyyo", ".oYyyyyyyo.", "..oyyyyyo..", "..oyyyyyo..", ".oyyyoyyyo.", ".oyyo.oyyo.", ".oo.....oo."],{o:"#BA7517",y:"#FAC775",Y:"#FAEEDA"},1],
+["r","풍선",24,1,["..rrr..",".rwrrr.","rwrrrrr","rrrrrrd","rrrrrrd",".rrrrd.","..rdd..","...r...","...k...","...k...","..k....","..k....","...k...","...k...","....k..","....k..","...k...","...k...","...k..."],{r:"#E24B4A",w:"#F7C1C1",d:"#A32D2D",k:"#888780"}],
+["r","막대사탕",25,12,[".ppp.","pywpp","ppypp","ppppp",".ppp.","..w..","..w.."],{p:"#ED93B1",y:"#FAC775",w:"#F1EFE8"}],
+["r","연필",26,8,[".k.","www","yyy","yyy","yyy","yyy","yyy","yyy","yyy","ppp","ppp"],{k:"#2C2C2A",w:"#F5C4B3",y:"#EF9F27",p:"#ED93B1"}],
+["r","깃발",26,4,["kbbbbbb","kbbybbb","kbyyybb","kbbybbb","kbbbbbb",...R(10,"k")],{k:"#5F5E5A",b:"#378ADD",y:"#FAC775"}],
+["r","우산",20,-3,[".......k.......",".....pPPPp.....","...ppPPPPPpp...","..pppPPPPPppp..",".ppppPPPPPpppp.","pppppPPPPPppppp","p.p.p.pkp.p.p.p",...R(14,".......k......."),".......k..k....",".......kkk....."],{p:"#534AB7",P:"#AFA9EC",k:"#444441"}],
+["r","꽃다발",44,18,[".......ii.ii.......", "......iIIiIIid.dd..", "..aa.aiIIyIIiDdDDd.", ".aAAaAAiyYyiDDyDDd.", ".aAAyAiIIyIIiyYyd..", "..ayYyiIIiIIiDyDDd.", ".aAAyAAii.iiDDdDDd.", ".aAAaAAaG.G.dd.dd..", "GGaa.aa.G.G.....GG.", "GggG....G.G...GggG.", ".GgggG..G.G..GgggG.", "..GGG...G.G..GGG...", "....KwwwWwwwWwK....", "....KWwwwWwwwWK....", ".....KWwwwWwwK.....", ".....KrrrrrrrK.....", "......KrWwwrK......", "......KwwWwwK......", ".......KwwWK.......", ".......KwwwK.......", "........KwK........", "........KWK........", "........KwK........"],{a:"#D4537E",A:"#F4C0D1",d:"#BA7517",D:"#FAC775",i:"#A32D2D",I:"#F09595",y:"#EF9F27",Y:"#FAEEDA",G:"#3B6D11",g:"#97C459",K:"#185FA5",w:"#B5D4F4",W:"#E6F1FB",r:"#E24B4A"},1]
+];
+const B=[
+["완두콩","round","#97C459","#3B6D11","#C0DD97",""],["강낭콩","kidney","#A32D2D","#501313","#E24B4A",""],["검은콩","oval","#2C2C2A","#0b0b0b","#5F5E5A","shine"],["작두콩","big","#F5C4B3","#993C1D","#FAECE7","sword"],["호랑이강낭콩","kidney","#FAEEDA","#854F0B","#ffffff","tiger"],["메주콩","round","#FAC775","#854F0B","#FAEEDA","eye"],["팥","slong","#791F1F","#501313","#E24B4A","white"],["녹두","slong","#639922","#27500A","#97C459",""],["쥐눈이콩","small","#2C2C2A","#0b0b0b","#888780","shine"],["병아리콩","chick","#EFCF94","#BA7517","#FAEEDA","beak"]];
+const GOLD=["반짝 알콩이","round","#FAC775","#BA7517","#FAEEDA",""];
+const SH={round:[9.5,9,7.5,7],kidney:[10,9,9,6],oval:[10,9,8.5,6.3],big:[10,9,9.6,7.6],slong:[10,10.5,6.8,4.3],small:[10,10.5,5.6,4.8],chick:[9.5,9.5,7.2,6.6]};
+const GRAY=["","","#D3D1C7","#B4B2A9","#D3D1C7",""];
+function beanCanvas(b,mode){const[n,s,_b,_d,_l,pat]=b;let[base,dk,lt]=[b[2],b[3],b[4]];if(mode==="lock"){base="#D3D1C7";dk="#B4B2A9";lt="#E2E0D8"}
+const[cx,cy,rx,ry]=SH[s],W=20,H=18,g=[],lock=mode==="lock";
+const ins=(x,y)=>{if(x<0||y<0||x>=W||y>=H)return false;const X=x+.5,Y=y+.5;let v=((X-cx)/rx)**2+((Y-cy)/ry)**2<=1;
+if(s==="kidney"&&((X-cx)**2+(Y-(cy+ry+2.2))**2<3.6**2))v=false;if(pat==="beak"&&((x===14&&y===2)||(x===15&&y===2)||(x===13&&y===3)||(x===14&&y===3)))v=true;return v};
+const mix=(a,c,t)=>'#'+[1,3,5].map(i=>Math.round(parseInt(a.substr(i,2),16)*(1-t)+parseInt(c.substr(i,2),16)*t).toString(16).padStart(2,'0')).join('');
+const mid=mix(base,dk,.35);
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!ins(x,y))continue;let c=base;
+if(!ins(x-1,y)||!ins(x+1,y)||!ins(x,y-1)||!ins(x,y+1))c=mode==="shiny"?"#EF9F27":dk;
+else if(!lock){const X=x+.5-cx,Y=y+.5-cy;if(X/rx+Y/ry>.75)c=mid;
+const hx=X/rx+.5,hy=Y/ry+.55;if(hx*hx+hy*hy<.05||(pat==="shine"&&hx*hx+hy*hy<.09))c=lt;
+if(pat==="tiger"&&!(Math.abs(Y-1.5)<2.5&&Math.abs(X)<5)&&((Math.floor(x-y*.5+Math.sin(y*.9)*1.4)%4+4)%4===0))c=(y%3?"#993556":"#D4537E");
+if(pat==="sword"&&y===Math.round(cy-ry+1.5)&&Math.abs(X)<5)c="#712B13";
+if(pat==="white"&&Math.round(X)===Math.round(rx-2)&&Math.abs(Y)<1.2)c="#F1EFE8";
+if(pat==="eye"&&y===Math.round(cy-ry+1.5)&&Math.abs(X)<1.5)c="#854F0B"}
+g.push([x,y,c])}
+if(!lock){const sm=s==="small"||s==="slong",ex=sm?2:3,fy=Math.round(cy)-(sm?1:2),fx=Math.round(cx-.5);
+const dark=parseInt(base.substr(1,2),16)<80;
+[fx-ex,fx+ex-1].forEach(x=>{if(sm){g.push([x,fy,dark?"#ffffff":"#2C2C2A"]);g.push([x,fy+1,dark?"#B4B2A9":"#2C2C2A"])}
+else{g.push([x,fy,"#ffffff"],[x+1,fy,dark?"#ffffff":"#2C2C2A"],[x,fy+1,dark?"#ffffff":"#2C2C2A"],[x+1,fy+1,"#2C2C2A"])}});
+const bw=sm?1:2;[fx-ex-bw,fx+ex+(sm?0:1)].forEach(x=>{for(let k=0;k<bw;k++)g.push([x+k,fy+(sm?2:3),"#F09595"])});
+const mc=dark?"#F09595":dk;if(sm)g.push([fx,fy+2,mc]);else g.push([fx-1,fy+3,mc],[fx,fy+4,mc],[fx+1,fy+3,mc])}
+const by=Math.round(cy+ry);[[-2],[1]].forEach(([d])=>{g.push([Math.round(cx+d-.5),by,dk]);g.push([Math.round(cx+d+.5),by,dk])});
+if(mode==="shiny")[[1,1],[18,2],[0,14],[19,15]].forEach(([x,y])=>{[[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,c])=>g.push([x+a,y+c,a||c?"#FAC775":"#ffffff"]))});
+const cv=document.createElement('canvas');cv.width=W;cv.height=H;const t=cv.getContext('2d');g.forEach(([x,y,c])=>{if(x>=0&&y>=0&&x<W&&y<H){t.fillStyle=c;t.fillRect(x,y,1,1)}});return cv}
+const HUE=[0,140,250];
+function itemSvg(it,box,v){const[_,n,ox,oy,rows,c,hi]=it,u=hi?1:2;let s="";rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(c[ch])s+=`<rect x="${box?x:(ox+x)*u}" y="${box?y:(oy+y)*u}" width="${box?1:u}" height="${box?1:u}" fill="${c[ch]}"/>`}));
+const f=v?` style="filter:hue-rotate(${HUE[v]}deg)"`:"";
+if(!box)return `<g${f}>${s}</g>`;const w=Math.max(...rows.map(r=>r.length)),h=rows.length,m=Math.max(w,h,hi?12:6);return `<svg viewBox="${(w-m)/2} ${(h-m)/2} ${m} ${m}" shape-rendering="crispEdges"><g${f}>${s}</g></svg>`}
+const rc=(x,y,w,h,c)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
+const circ=(cx,cy,R,c,cut)=>{let s="";for(let y=-R;y<=R;y++)for(let x=-R;x<=R;x++)if(x*x+y*y<=R*R+R*.8&&!(cut&&(x-cut[0])**2+(y-cut[1])**2<=R*R))s+=rc(cx+x,cy+y,1,1,c);return s};
+function rnd(sd){return()=>(sd=(sd*9301+49297)%233280)/233280}
+const BG=[["맑은 하늘",[["#B5D4F4",76],["#97C459",2],["#639922",6]],"cloud"],["밤하늘",[["#26215C",30],["#3C3489",26],["#534AB7",20],["#26215C",8]],"star"],["눈 오는 날",[["#B5D4F4",76],["#E6F1FB",2],["#ffffff",6]],"snow"],["벚꽃",[["#FBEAF0",76],["#C0DD97",2],["#97C459",6]],"petal"],["바다",[["#B5D4F4",46],["#378ADD",30],["#FAEEDA",2],["#FAC775",6]],"wave"],["숲",[["#EAF3DE",76],["#639922",2],["#3B6D11",6]],"tree"],["교실",[["#FAEEDA",76],["#854F0B",2],["#BA7517",6]],"board"]];
+function bgSvg(i){const[_,bands,d]=BG[i],r=rnd(i*7+3);let s="",y=-18;bands.forEach(([c,h])=>{s+=rc(-6,y,76,h,c);y+=h});
+const cl=(x,y)=>rc(x+2,y,8,2,"#fff")+rc(x,y+2,14,3,"#fff")+rc(x+3,y-1,4,1,"#fff");
+if(d==="cloud")s+=cl(-2,-8)+cl(46,4)+cl(20,-14);
+if(d==="star"){for(let k=0;k<22;k++)s+=rc(Math.floor(r()*76)-6,Math.floor(r()*60)-18,1,1,"#FAC775");s+=circ(54,-6,6,"#FAEEDA",[3,-2])+rc(4,0,1,3,"#ffffff")+rc(3,1,3,1,"#ffffff")}
+if(d==="snow")for(let k=0;k<28;k++)s+=rc(Math.floor(r()*76)-6,Math.floor(r()*74)-18,2,2,"#ffffff");
+if(d==="petal")for(let k=0;k<20;k++){const x=Math.floor(r()*76)-6,y=Math.floor(r()*74)-18;s+=rc(x,y,2,1,"#ED93B1")+rc(x+1,y+1,1,1,"#F4C0D1")}
+if(d==="wave")for(let k=0;k<10;k++)s+=rc(Math.floor(r()*70)-6,30+Math.floor(r()*26),4,1,"#E6F1FB");
+if(d==="tree")[[-6,20],[54,14],[64,26]].forEach(([x,t])=>{s+=rc(x+5,50,3,8,"#633806");for(let k=0;k<4;k++)s+=rc(x+4-k*2,t+k*8,5+k*4,8,k%2?"#639922":"#3B6D11")});
+if(d==="board"){s+=rc(-2,-14,68,32,"#854F0B")+rc(0,-12,64,28,"#085041");for(let k=0;k<4;k++)s+=rc(4+Math.floor(r()*10),-8+k*6,20+Math.floor(r()*24),1,"#E1F5EE");s+=rc(2,16,10,2,"#ffffff")}
+return s}
+
+/* ---------- 저장 ---------- */
+const KEY="alkong-sokdam-v1",TEACH=location.hash==="#teacher";
+const NEW=()=>({cross:0,correct:[],bag:{},own:[],wear:{h:null,f:null,b:null,r:null},skin:-1,bg:0,shiny:[],snd:1,order:null,metShown:[]});
+let S=NEW();
+try{const t=JSON.parse(localStorage.getItem(KEY)||"null");if(t)S=Object.assign(NEW(),t)}catch(e){}
+function save(){if(TEACH)return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const POOL=[...I.map((_,i)=>"i"+i),...BG.slice(1).map((_,i)=>"g"+(i+1))];
+const VPOOL=[];I.forEach((_,i)=>{VPOOL.push("v"+i+"_1");VPOOL.push("v"+i+"_2")});
+if(!S.order){const sh=a=>a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);S.order=[...sh(POOL),...sh(VPOOL)];save()}
+const owns=id=>TEACH||S.own.includes(id);
+const correctSet=()=>new Set(S.correct);
+const met=w=>{if(TEACH)return true;const c=correctSet();for(let k=w*10;k<w*10+10;k++)if(!c.has(k))return false;return true};
+const metCount=()=>[...Array(10).keys()].filter(met).length;
+const goldOK=()=>TEACH||S.cross>=50;
+
+/* ---------- 소리 ---------- */
+
+
+/* ---------- 알콩이 그리기 ---------- */
+const img=new Image();img.src=SRC;const skins={};
+function skinUrl(i){if(i<0)return SRC;const b=i===10?GOLD:B[i];if(skins[i])return skins[i];if(!img.complete)return SRC;const cv=document.createElement('canvas');cv.width=64;cv.height=64;const t=cv.getContext('2d');t.drawImage(img,0,0);const d=t.getImageData(0,0,64,64),p=d.data,[_,__,base,dk,lt]=b;
+const hx=h=>[1,3,5].map(k=>parseInt(h.substr(k,2),16)),M={"96,183,88":hx(base),"58,140,64":hx(dk==="#0b0b0b"?"#5F5E5A":dk),"150,214,128":hx(lt)};const dark=hx(base)[0]<80;
+for(let k=0;k<p.length;k+=4){const key=p[k]+","+p[k+1]+","+p[k+2],x=(k/4)%64,y=Math.floor(k/256);if(M[key]){[p[k],p[k+1],p[k+2]]=M[key]}else if(dark&&key==="30,30,30"&&y>=20&&y<=21&&x>=26&&x<=33){p[k]=p[k+1]=p[k+2]=241}}
+t.putImageData(d,0,0);return skins[i]=cv.toDataURL()}
+function alSvg(w,h,withBg,noHand){const W=S.wear;let ov=["b","f","h","r"].map(k=>{const v=W[k];if(!v||(noHand&&k==="r"))return"";const[i,c]=v;return itemSvg(I[i],0,c)}).join('');
+return `<svg viewBox="-6 -18 76 84" width="${w}" height="${h}" shape-rendering="crispEdges">${withBg?bgSvg(S.bg):""}<image href="${skinUrl(S.skin)}" x="0" y="0" width="64" height="64" style="image-rendering:pixelated"/>${ov}</svg>`}
+
+/* ---------- 화면 전환 ---------- */
+const VIEWS=["home","pick","play","closet","dexv"];
+function show(v){VIEWS.forEach(x=>$(x).hidden=x!==v);window.scrollTo(0,0);if(v==="home")drawHome();if(v==="closet")drawCloset();if(v==="dexv")drawDex();if(v==="pick")drawPick()}
+document.querySelectorAll('.back').forEach(b=>b.onclick=()=>show("home"));
+function drawHome(){$('hstage').innerHTML=alSvg(152,168,1);$('cCross').textContent=S.cross+"번";$('cFr').textContent=metCount()+" / 10";const bn=Object.keys(S.bag).length;$('cBag').textContent=bn+"개";$('rvSub').textContent="틀린 속담 "+bn+"개";
+$('clSub').textContent="꾸미기 "+(TEACH?"전부":S.own.filter(x=>x[0]==="i").length+"개");$('dxSub').textContent="친구 "+metCount()+"명";$('homeNote').textContent=TEACH?"선생님 미리보기: 모든 꾸미기가 열려 있고 기록은 저장되지 않아요":""}
+
+$('goPick').onclick=()=>show("pick");$('goCloset').onclick=()=>show("closet");$('goDex').onclick=()=>show("dexv");
+$('goReview').onclick=()=>{const k=Object.keys(S.bag).map(Number);if(!k.length){$('homeNote').textContent="오답 주머니가 비어 있어요. 강을 건너다 틀린 속담이 여기 모여요.";return}startGame({range:k,review:true,type:"mix"})};
+
+/* ---------- 고르기 ---------- */
+let pickW=-1,pickT="mix";const TYPES=[["mix","섞어서"],["m","뜻 보고 속담"],["s","속담 보고 뜻"],["b","빈칸 채우기"]];
+function drawPick(){const w=$('weeks');w.innerHTML='';for(let i=0;i<10;i++){const d=document.createElement('button');d.className='wk'+(pickW===i?' on':'');d.appendChild(beanCanvas(B[i],met(i)?"":"lock"));d.append((i+1)+"주");d.title=(i*10+1)+"~"+(i*10+10)+"번";d.onclick=()=>{pickW=i;drawPick()};w.appendChild(d)}
+const a=document.createElement('button');a.className='wk all'+(pickW===-1?' on':'');a.textContent="1~100번 전체 섞기";a.onclick=()=>{pickW=-1;drawPick()};w.appendChild(a);
+$('types').innerHTML='';TYPES.forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.className=pickT===k?'on':'';b.onclick=()=>{pickT=k;drawPick()};$('types').appendChild(b)})}
+$('start').onclick=()=>{const range=pickW<0?[...Array(100).keys()]:[...Array(10).keys()].map(k=>pickW*10+k);startGame({range,week:pickW,type:pickT})};
+
+/* ---------- 문제 ---------- */
+const simOf=i=>SIM.filter(p=>p.includes(i)).flat();
+const shuf=a=>a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
+function makeQ(i,type){if(type==="mix")type=["m","s","b"][Math.floor(Math.random()*3)];
+const bad=new Set([i,...simOf(i)]);const pool=shuf([...Array(100).keys()].filter(k=>!bad.has(k)));let opts;
+if(type==="b"){const ans=P[i][2],L=ans.length;const cand=pool.map(k=>P[k][2]).filter((x,j,a)=>a.indexOf(x)===j&&x!==ans&&!P[i][0].includes(x));cand.sort((x,y)=>Math.abs(x.length-L)-Math.abs(y.length-L)+(Math.random()-.5));opts=shuf([ans,...cand.slice(0,3)]);
+return{i,type,q:P[i][0].split(ans).join("( ? )"),hint:P[i][1],opts,ans}}
+const pick3=pool.slice(0,3);const f=type==="m"?0:1;opts=shuf([i,...pick3]).map(k=>P[k][f]);return{i,type,q:P[i][f?0:1],opts,ans:P[i][f]}}
+const TL={m:"뜻을 보고 알맞은 속담을 골라요",s:"속담의 뜻을 골라요",b:"빈칸에 들어갈 말을 골라요"};
+
+/* ---------- 게임 ---------- */
+const STEP=96;let G=null;
+function startGame(o){const N=o.review?Math.min(10,Math.max(3,o.range.length)):10;
+G={...o,N,pos:0,used:new Set(),miss:0,busy:false,cur:null};show("play");$('qa').hidden=false;$('done').hidden=true;buildRiver();nextQ()}
+function buildRiver(){const st=$('strip');let h=`<div class="bank" style="left:-200px;width:${200+60}px"></div>`;
+for(let p=1;p<G.N;p++)h+=`<div class="stone" style="left:${p*STEP+6}px"></div>`;
+h+=`<div class="bank" style="left:${G.N*STEP-10}px;width:400px"></div>`;
+const r=rnd(5);for(let k=0;k<G.N*3;k++)h+=`<div class="wave" style="left:${Math.floor(r()*G.N*STEP)}px;top:${20+Math.floor(r()*70)}px"></div>`;
+h+=`<div id="goal" style="position:absolute;left:${G.N*STEP+70}px;bottom:30px"></div><div id="al">${alSvg(76,84)}</div>`;st.innerHTML=h;
+const gw=G.week>=0&&!G.review?G.week:-1;if(gw>=0){const c=beanCanvas(B[gw],met(gw)?"":"lock");c.style.cssText="width:60px;height:54px;image-rendering:pixelated";$('goal').appendChild(c)}
+place(false)}
+function place(anim){const al=$('al'),st=$('strip');if(!anim){al.style.transition='none';st.style.transition='none'}
+al.style.left=(G.pos*STEP)+"px";const W=$('river').clientWidth;st.style.transform=`translateX(${Math.min(30,W*.3-G.pos*STEP-38)}px)`;
+if(!anim){void al.offsetWidth;al.style.transition='';st.style.transition=''}}
+function chooseIdx(){const c=correctSet();let cand=G.range.filter(k=>!G.used.has(k));if(!cand.length){G.used.clear();cand=G.range.slice()}
+const w=cand.map(k=>(S.bag[k]!==undefined?3:1)*(c.has(k)?1:2));let t=Math.random()*w.reduce((a,b)=>a+b,0);for(let j=0;j<cand.length;j++){t-=w[j];if(t<=0)return cand[j]}return cand[cand.length-1]}
+function nextQ(){const i=chooseIdx();G.used.add(i);G.cur=makeQ(i,G.type);G.busy=false;const q=G.cur;
+$('prog').textContent=(G.review?"복습 강 · ":"")+G.pos+" / "+G.N+"칸";$('qt').textContent=TL[q.type];
+$('q').innerHTML='';$('q').append(q.q);if(q.hint){const s=document.createElement('small');s.textContent="뜻: "+q.hint;$('q').appendChild(s)}
+$('opts').innerHTML='';q.opts.forEach(o=>{const b=document.createElement('button');b.className='opt';b.textContent=o;b.onclick=()=>answer(b,o===q.ans);$('opts').appendChild(b)})}
+const W8=ms=>new Promise(r=>setTimeout(r,ms));
+function cls(c){const s=$('al').firstElementChild;s.setAttribute('class','');void s.getBoundingClientRect();if(c)s.setAttribute('class',c)}
+function msg(t){$('msg').textContent=t;$('msg').style.opacity=1;setTimeout(()=>$('msg').style.opacity=0,900)}
+function splash(){const al=$('al'),x=parseFloat(al.style.left)+70;for(let k=-2;k<=2;k++){const d=document.createElement('div');d.className='drop';d.style.left=(x+k)+"px";d.style.setProperty('--x',k*9+'px');$('strip').appendChild(d);setTimeout(()=>d.remove(),650)}}
+async function answer(b,ok){if(G.busy)return;G.busy=true;const i=G.cur.i;
+if(ok){b.classList.add('ok');if(!S.correct.includes(i))S.correct.push(i);if(S.bag[i]!==undefined){S.bag[i]++;if(S.bag[i]>=2)delete S.bag[i]}save();
+cls('crouch');await W8(140);cls('air');G.pos++;place(true);await W8(550);cls('land');await W8(260);if(G.pos>=G.N)return arrive();nextQ()}
+else{b.classList.add('no');[...$('opts').children].find(x=>x.textContent===G.cur.ans).classList.add('ok');G.miss++;S.bag[i]=0;save();
+cls('crouch');await W8(140);cls('sink');const al=$('al');al.style.left=(G.pos*STEP+60)+"px";await W8(420);splash();msg("퐁당!");await W8(500);
+al.style.transition='none';al.style.left=(G.pos*STEP)+"px";cls();void al.offsetWidth;al.style.transition='';await W8(900);nextQ()}}
+$('quit').onclick=()=>show("home");
+
+/* ---------- 도착과 보상 ---------- */
+async function arrive(){$('prog').textContent=G.N+" / "+G.N+"칸";S.cross++;const gifts=[];
+const nxt=S.order.find(id=>!S.own.includes(id));if(nxt){S.own.push(nxt);gifts.push(nxt)}
+if(S.cross===50)gifts.push("gold");
+for(let w=0;w<10;w++)if(met(w)&&!S.metShown.includes(w)){S.metShown.push(w);gifts.push("f"+w)}
+if(!G.review&&G.week>=0&&G.miss===0&&metCount()===10&&!S.shiny.includes(G.week)){S.shiny.push(G.week);gifts.push("s"+G.week)}
+save();$('al').innerHTML=alSvg(76,84);cls('yay');confetti();
+await W8(700);$('qa').hidden=true;const d=$('done');d.hidden=false;d.innerHTML='';
+const h=document.createElement('h2');h.textContent=G.miss===0?"한 번도 안 빠지고 건넜어요!":"강을 건넜어요!";d.appendChild(h);
+const p=document.createElement('div');p.className='note';p.textContent=G.miss?"퐁당 "+G.miss+"번 · 틀린 속담은 오답 주머니에 들어갔어요":"퐁당 0번";d.appendChild(p);
+const gw=document.createElement('div');gw.className='gifts';gifts.forEach(id=>gw.appendChild(giftEl(id)));if(!gifts.length){const g=document.createElement('div');g.className='note';g.textContent="옷장이 꽉 찼어요. 반짝 콩 친구를 모아 보세요!";gw.appendChild(g)}d.appendChild(gw);
+const row=document.createElement('div');row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;justify-content:center";
+const again=document.createElement('button');again.className='big';again.style.flex="1 1 100%";again.textContent=G.review?"복습 강 다시":"한 번 더 건너기";
+again.onclick=()=>{if(G.review){const k=Object.keys(S.bag).map(Number);if(!k.length){show("home");return}startGame({range:k,review:true,type:"mix"})}else startGame({range:G.range,week:G.week,type:G.type})};
+const cl=document.createElement('button');cl.className='pill';cl.textContent="옷장 가기";cl.onclick=()=>show("closet");
+const hm=document.createElement('button');hm.className='pill';hm.textContent="처음으로";hm.onclick=()=>show("home");
+row.append(again,cl,hm);d.appendChild(row)}
+function giftEl(id){const g=document.createElement('div');g.className='gift';let name="";
+if(id[0]==="i"){const it=I[+id.slice(1)];g.innerHTML=itemSvg(it,1);name=it[1]}
+else if(id[0]==="g"){const k=+id.slice(1);g.innerHTML=`<svg viewBox="-6 -18 76 84" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">${bgSvg(k)}</svg>`;name=BG[k][0]+" 배경"}
+else if(id[0]==="v"){const[a,v]=id.slice(1).split("_").map(Number);g.innerHTML=itemSvg(I[a],1,v);name=I[a][1]+" 새 색깔"}
+else if(id==="gold"){g.appendChild(beanCanvas(GOLD));name="반짝 알콩이 변신"}
+else if(id[0]==="f"){const w=+id.slice(1);g.appendChild(beanCanvas(B[w]));name=B[w][0]+" 만남!"}
+else if(id[0]==="s"){const w=+id.slice(1);g.appendChild(beanCanvas(B[w],"shiny"));name="반짝 "+B[w][0]}
+const s=document.createElement('span');s.textContent=name;g.appendChild(s);return g}
+function confetti(){const cs=["#ED93B1","#FAC775","#97C459","#85B7EB","#AFA9EC"],r=$('river');for(let k=0;k<24;k++){const d=document.createElement('div');d.className='confetti';d.style.left=Math.random()*100+"%";d.style.background=cs[k%5];d.style.animationDelay=(Math.random()*.5)+"s";r.appendChild(d);setTimeout(()=>d.remove(),2200)}}
+
+/* ---------- 옷장 ---------- */
+const CT=[["h","머리"],["f","얼굴"],["b","몸"],["r","손"],["s","변신"],["g","배경"]];let ctab="h";
+function drawCloset(){$('cstage').innerHTML=alSvg(152,168,1);
+$('tabs').innerHTML='';CT.forEach(([k,n])=>{const b=document.createElement('button');b.className='tab'+(ctab===k?' on':'');b.textContent=n;b.onclick=()=>{ctab=k;drawCloset()};$('tabs').appendChild(b)});
+const box=$('items');box.innerHTML='';$('dots').innerHTML='';
+const add=(inner,on,sel,click,title)=>{const d=document.createElement('button');d.className='it'+(sel?' sel':'')+(on?'':' lock');if(typeof inner==="string")d.innerHTML=inner;else d.appendChild(inner);d.title=title;d.setAttribute('aria-label',title+(on?'':' (잠김)'));d.onclick=on?click:()=>{$('clNote').textContent="강을 더 건너면 열려요"};box.appendChild(d)};
+if(ctab==="g"){BG.forEach((b,i)=>add(`<svg viewBox="-6 -18 76 84" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges" style="width:100%;height:100%">${bgSvg(i)}</svg>`,i===0||owns("g"+i),S.bg===i,()=>{S.bg=i;save();$('clNote').textContent=b[0]+" 배경";drawCloset()},b[0]));return}
+if(ctab==="s"){add(beanCanvas(B[0]),true,S.skin===-1,()=>{S.skin=-1;save();$('clNote').textContent="원래 알콩이";drawCloset()},"원래 알콩이");
+B.forEach((b,i)=>add(beanCanvas(b,met(i)?"":"lock"),met(i),S.skin===i,()=>{S.skin=i;save();$('clNote').textContent=b[0]+" 알콩이로 변신!";drawCloset()},b[0]));
+add(beanCanvas(GOLD,goldOK()?"shiny":"lock"),goldOK(),S.skin===10,()=>{S.skin=10;save();$('clNote').textContent="반짝 알콩이로 변신!";drawCloset()},"반짝 알콩이");
+if(!img.complete)img.onload=drawCloset;return}
+I.forEach((it,i)=>{if(it[0]!==ctab)return;const w=S.wear[ctab],sel=w&&w[0]===i;add(itemSvg(it,1),owns("i"+i),sel,()=>{S.wear[ctab]=sel?null:[i,0];save();$('clNote').textContent=sel?"벗었어요":it[1]+" 착용!";drawCloset()},it[1])});
+const w=S.wear[ctab];if(w&&ctab!=="s"){[0,1,2].forEach(v=>{if(v&&!owns("v"+w[0]+"_"+v))return;const d=document.createElement('button');d.className='dot'+(w[1]===v?' sel':'');d.innerHTML=itemSvg(I[w[0]],1,v);d.setAttribute('aria-label',"색깔 "+(v+1));d.onclick=()=>{S.wear[ctab]=[w[0],v];save();drawCloset()};$('dots').appendChild(d)})}}
+
+/* ---------- 도감 ---------- */
+function drawDex(){const c=correctSet();$('dex').innerHTML='';B.forEach((b,i)=>{const m=met(i),n=[...Array(10).keys()].filter(k=>c.has(i*10+k)).length;const d=document.createElement('div');d.className='cell';d.appendChild(beanCanvas(b,m?"":"lock"));d.append(m?b[0]:(i+1)+"주 친구");
+const s=document.createElement('small');s.textContent=(i*10+1)+"~"+(i*10+10)+"번 · "+(TEACH?10:n)+"/10";d.appendChild(s);$('dex').appendChild(d)});
+$('shiny').innerHTML='';B.forEach((b,i)=>{const on=TEACH||S.shiny.includes(i);const d=document.createElement('div');d.className='cell';d.appendChild(beanCanvas(b,on?"shiny":"lock"));d.append(on?"반짝 "+b[0]:"?");$('shiny').appendChild(d)});
+$('dxNote').textContent="숫자는 그 주 속담 중 한 번이라도 맞힌 개수예요"}
+
+img.onload=()=>{if(!$('home').hidden)drawHome()};
+show("home");
+</script>
+
+</body>
+</html>
